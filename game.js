@@ -204,6 +204,13 @@ class Ship {
     this.dead          = false;
     this.speedMultiplier = 1;
     this.speedTimer      = 0;
+
+    this.shieldEnergy = 100;
+    this.shieldMaxEnergy = 100;
+    this.shieldActive = false;
+    this.shieldDrainRate = 30;
+    this.shieldRechargeRate = 15;
+    this.shieldMinActivation = 10;
   }
 
   update(dt) {
@@ -216,6 +223,23 @@ class Ship {
       if (this.speedTimer <= 0) {
         this.speedMultiplier = 1;
         this.speedTimer = 0;
+      }
+    }
+
+    // Escudo
+    if (keys['ShiftLeft'] || keys['ShiftRight']) {
+      if (this.shieldEnergy > this.shieldMinActivation) {
+        this.shieldActive = true;
+        this.shieldEnergy -= this.shieldDrainRate * dt;
+        if (this.shieldEnergy < 0) this.shieldEnergy = 0;
+      } else {
+        this.shieldActive = false;
+      }
+    } else {
+      this.shieldActive = false;
+      if (this.shieldEnergy < this.shieldMaxEnergy) {
+        this.shieldEnergy += this.shieldRechargeRate * dt;
+        if (this.shieldEnergy > this.shieldMaxEnergy) this.shieldEnergy = this.shieldMaxEnergy;
       }
     }
 
@@ -279,6 +303,21 @@ class Ship {
     }
 
     ctx.restore();
+
+    // Escudo visual
+    if (this.shieldActive) {
+      const pulse = 0.5 + Math.sin(Date.now() * 0.01) * 0.2;
+      const alpha = 0.2 + (this.shieldEnergy / this.shieldMaxEnergy) * 0.3;
+      ctx.save();
+      ctx.strokeStyle = `rgba(0, 255, 255, ${alpha.toFixed(2)})`;
+      ctx.fillStyle = `rgba(0, 255, 255, ${(alpha * 0.3).toFixed(2)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius + 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 }
 
@@ -579,8 +618,24 @@ function update(dt) {
   if (ship.invincible <= 0) {
     for (const a of asteroids) {
       if (dist(ship, a) < ship.radius + a.radius * 0.82) {
-        killShip();
-        break;
+        if (ship.shieldActive) {
+          // Escudo absorbe el golpe
+          for (let i = 0; i < 8; i++) {
+            const p = new Particle(ship.x, ship.y, '#00ffff', rand(1, 2));
+            const angle = rand(0, Math.PI * 2);
+            const speed = rand(50, 120);
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed;
+            p.life = rand(0.3, 0.6);
+            p.ttl = p.life;
+            particles.push(p);
+          }
+          ship.shieldEnergy -= 20;
+          if (ship.shieldEnergy < 0) ship.shieldEnergy = 0;
+        } else {
+          killShip();
+          break;
+        }
       }
     }
   }
@@ -589,8 +644,24 @@ function update(dt) {
   if (ship.invincible <= 0) {
     for (const s of shootingStars) {
       if (dist(ship, s) < ship.radius + s.radius) {
-        killShip();
-        break;
+        if (ship.shieldActive) {
+          // Escudo absorbe el golpe
+          for (let i = 0; i < 8; i++) {
+            const p = new Particle(ship.x, ship.y, '#00ffff', rand(1, 2));
+            const angle = rand(0, Math.PI * 2);
+            const speed = rand(50, 120);
+            p.vx = Math.cos(angle) * speed;
+            p.vy = Math.sin(angle) * speed;
+            p.life = rand(0.3, 0.6);
+            p.ttl = p.life;
+            particles.push(p);
+          }
+          ship.shieldEnergy -= 30;
+          if (ship.shieldEnergy < 0) ship.shieldEnergy = 0;
+        } else {
+          killShip();
+          break;
+        }
       }
     }
   }
@@ -644,6 +715,31 @@ function drawHUD() {
     ctx.textAlign = 'left';
     ctx.fillText(`VELOCIDAD  ${ship.speedTimer.toFixed(1)}s`, 14, 50);
   }
+
+  // Indicador del escudo
+  const shieldY = 74;
+  const shieldBarWidth = 100;
+  const shieldBarHeight = 8;
+  const shieldX = 14;
+
+  // Fondo de la barra
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.fillRect(shieldX, shieldY, shieldBarWidth, shieldBarHeight);
+
+  // Barra de energía
+  const shieldPercent = ship.shieldEnergy / ship.shieldMaxEnergy;
+  ctx.fillStyle = ship.shieldActive ? '#00ffff' : '#008888';
+  ctx.fillRect(shieldX, shieldY, shieldBarWidth * shieldPercent, shieldBarHeight);
+
+  // Borde
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(shieldX, shieldY, shieldBarWidth, shieldBarHeight);
+
+  // Texto
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.fillText(`ESCUDO`, shieldX, shieldY - 4);
 
 }
 
