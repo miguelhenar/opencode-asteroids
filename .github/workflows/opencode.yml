@@ -28,7 +28,8 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Forzamos la directiva regional global que exige el backend
+          OPENCODE_REGIONS: "global"
         with:
-          # Usamos la ruta libre sin restricciones de privacidad de datos
           model: opencode-go/deepseek-v4-flash
           use_github_token: true
