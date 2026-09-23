@@ -31,5 +31,5 @@ jobs:
            # Forzamos la aceptación de la política de entrenamiento de datos que exige el modelo
           OPENCODE_ALLOW_DATA_TRAINING: "true"
         with:
-          model: opencode/muse-spark-1.2
+          model: muse-spark-1.2
           use_github_token: true # <- ACTIVA ESTA OPCIÓN
