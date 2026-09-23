@@ -28,10 +28,7 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Forzamos a que tanto el agente principal como los sub-agentes usen la pasarela correcta
-          OPENCODE_MODEL: "opencode-go/muse-spark-1.2-contributor"
-          OPENCODE_ALLOW_DATA_TRAINING: "true"
         with:
-          # Especificamos el modelo de la pasarela libre
-          model: opencode-go/muse-spark-1.2-contributor
+          # Usamos la ruta libre sin restricciones de privacidad de datos
+          model: opencode-go/muse-spark-1.2-contributor-free
           use_github_token: true
