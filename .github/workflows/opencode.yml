@@ -12,10 +12,10 @@ jobs:
       contains(github.event.comment.body, '/opencode')
     runs-on: ubuntu-latest
     permissions:
-      id-token: write      # Requerido para el intercambio OIDC
-      contents: write      # Permite a OpenCode leer y escribir código si es necesario
-      pull-requests: write # Permite interactuar con los PRs
-      issues: write        # Permite responder y leer issues
+      id-token: write      
+      contents: write      
+      pull-requests: write 
+      issues: write        
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -27,8 +27,8 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # <- OBLIGATORIO: GitHub lo provee solo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENCODE_ALLOW_DATA_TRAINING: "true"
         with:
-          model: muse-spark-1.2
-          use_github_token: true # <- ACTIVA ESTA OPCIÓN
+          model: opencode/muse-spark-1.2
+          use_github_token: true
