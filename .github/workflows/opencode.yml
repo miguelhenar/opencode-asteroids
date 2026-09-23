@@ -28,8 +28,7 @@ jobs:
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Forzamos la directiva regional global que exige el backend
-          OPENCODE_REGIONS: "global"
         with:
-          model: opencode-go/deepseek-v4-flash
+          # Identificador libre global verificado en la documentación de Zen OpenCode
+          model: mimo-v2.5
           use_github_token: true
