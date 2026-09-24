@@ -229,7 +229,10 @@ class ShootingStar {
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
-  constructor() { this.reset(); }
+  constructor() {
+    this.sizeMultiplier = 1;
+    this.reset();
+  }
 
   reset() {
     this.x      = W / 2;
@@ -237,7 +240,7 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
+    this.radius = 12 * this.sizeMultiplier;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -253,6 +256,11 @@ class Ship {
     this.shieldMinActivation = 10;
     this.tripleShot     = false;
     this.tripleShotTimer = 0;
+  }
+
+  toggleSize() {
+    this.sizeMultiplier = this.sizeMultiplier === 1 ? 2 : 1;
+    this.radius = 12 * this.sizeMultiplier;
   }
 
   update(dt) {
@@ -315,7 +323,7 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = SKINS[currentSkin].noseOffset;
+    const NOSE = SKINS[currentSkin].noseOffset * this.sizeMultiplier;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
     if (this.tripleShot) {
@@ -337,6 +345,7 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
+    ctx.scale(this.sizeMultiplier, this.sizeMultiplier);
     ctx.strokeStyle = skin.color;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
@@ -372,7 +381,7 @@ class Ship {
       ctx.fillStyle = `rgba(0, 255, 255, ${(alpha * 0.3).toFixed(2)})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius + 10, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.radius + 10 * this.sizeMultiplier, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
@@ -593,6 +602,7 @@ function killShip() {
 // ── Update ────────────────────────────────────────────────────────────────────
 function update(dt) {
   if (state === 'menu') {
+    pressed('KeyS');
     if (pressed('ArrowLeft'))  menuSkin = (menuSkin - 1 + SKINS.length) % SKINS.length;
     if (pressed('ArrowRight')) menuSkin = (menuSkin + 1) % SKINS.length;
     if (pressed('Space')) startGame();
@@ -600,6 +610,7 @@ function update(dt) {
   }
 
   if (state === 'gameover') {
+    pressed('KeyS');
     if (pressed('Space')) { state = 'menu'; menuSkin = currentSkin; }
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
@@ -607,6 +618,7 @@ function update(dt) {
   }
 
   if (state === 'dead') {
+    pressed('KeyS');
     deadTimer -= dt;
     particles.forEach(p => p.update(dt));
     particles = particles.filter(p => !p.dead);
@@ -619,6 +631,8 @@ function update(dt) {
     if (deadTimer <= 0) { state = 'playing'; ship.reset(); }
     return;
   }
+
+  if (pressed('KeyS')) ship.toggleSize();
 
   // Disparar
   if (pressed('Space')) {
@@ -655,7 +669,7 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        score += POINTS[a.size] * ship.sizeMultiplier;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         if (Math.random() < 0.15) powerUps.push(new PowerUp(a.x, a.y));
@@ -671,7 +685,7 @@ function update(dt) {
       if (!s.dead && !b.dead && dist(b, s) < s.radius) {
         b.dead = true;
         s.dead = true;
-        score += 500;
+        score += 500 * ship.sizeMultiplier;
 
         // Explosión dorada: partículas rápidas y grandes
         for (let i = 0; i < 30; i++) {
