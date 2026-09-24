@@ -12,10 +12,10 @@ jobs:
       contains(github.event.comment.body, '/opencode')
     runs-on: ubuntu-latest
     permissions:
-      id-token: write      # Requerido para el intercambio de autenticación segura
-      contents: write      # Permite al bot leer y escribir código si genera un parche
-      pull-requests: write # Permite interactuar y responder en Pull Requests
-      issues: write        # Permite leer y responder comentarios en los Issues
+      id-token: write      
+      contents: write      
+      pull-requests: write 
+      issues: write        
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -29,6 +29,6 @@ jobs:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # Modelo gratuito del catálogo público nativo libre de restricciones geográficas
-          model: opencode/anthropic/claude-sonnet-4-20250514
+          # Usamos el identificador exacto que te sugiere el servidor
+          model: claude-sonnet-4
           use_github_token: true
