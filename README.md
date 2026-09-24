@@ -29,6 +29,9 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `←` `→` (menú) | Seleccionar nave |
+
+La nave **GIGANTE** es el doble de grande que la nave clásica y multiplica por 2 los puntos obtenidos al usarla.
 
 ## Puntuación
 

@@ -39,6 +39,8 @@ const SKINS = [
     noseOffset: 21,
     flameVerts: [[-8, -4], [0, 0], [-8, 4]],
     flameLength: [6, 14],
+    scale: 1,
+    scoreMultiplier: 1,
   },
   {
     name: 'CAZADOR',
@@ -48,6 +50,8 @@ const SKINS = [
     noseOffset: 23,
     flameVerts: [[-6, -3], [0, 0], [-6, 3]],
     flameLength: [5, 12],
+    scale: 1,
+    scoreMultiplier: 1,
   },
   {
     name: 'FANTASMA',
@@ -57,6 +61,8 @@ const SKINS = [
     noseOffset: 19,
     flameVerts: [[-10, -3], [0, 0], [-10, 3]],
     flameLength: [4, 10],
+    scale: 1,
+    scoreMultiplier: 1,
   },
   {
     name: 'FLECHA',
@@ -66,6 +72,19 @@ const SKINS = [
     noseOffset: 25,
     flameVerts: [[-5, -3], [0, 0], [-5, 3]],
     flameLength: [5, 11],
+    scale: 1,
+    scoreMultiplier: 1,
+  },
+  {
+    name: 'GIGANTE',
+    color: '#ff6600',
+    flameColor: 'rgba(255, 102, 0, 0.85)',
+    verts: [[20, 0], [-12, -9], [-7, 0], [-12, 9]],
+    noseOffset: 21,
+    flameVerts: [[-8, -4], [0, 0], [-8, 4]],
+    flameLength: [6, 14],
+    scale: 2,
+    scoreMultiplier: 2,
   },
 ];
 
@@ -237,7 +256,7 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
+    this.radius = 12 * SKINS[currentSkin].scale;
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -315,7 +334,8 @@ class Ship {
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = SKINS[currentSkin].noseOffset;
+    const skin = SKINS[currentSkin];
+    const NOSE = skin.noseOffset * skin.scale;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
     if (this.tripleShot) {
@@ -337,6 +357,7 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
+    ctx.scale(skin.scale, skin.scale);
     ctx.strokeStyle = skin.color;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
@@ -372,7 +393,7 @@ class Ship {
       ctx.fillStyle = `rgba(0, 255, 255, ${(alpha * 0.3).toFixed(2)})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius + 10, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.radius + 10 * skin.scale, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
@@ -655,7 +676,7 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        score += POINTS[a.size] * SKINS[currentSkin].scoreMultiplier;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         if (Math.random() < 0.15) powerUps.push(new PowerUp(a.x, a.y));
@@ -671,7 +692,7 @@ function update(dt) {
       if (!s.dead && !b.dead && dist(b, s) < s.radius) {
         b.dead = true;
         s.dead = true;
-        score += 500;
+        score += 500 * SKINS[currentSkin].scoreMultiplier;
 
         // Explosión dorada: partículas rápidas y grandes
         for (let i = 0; i < 30; i++) {
@@ -895,6 +916,8 @@ function drawMenu() {
   ctx.arc(0, 0, 40, 0, Math.PI * 2);
   ctx.stroke();
 
+  ctx.scale(skin.scale, skin.scale);
+
   // Silueta de la nave
   ctx.strokeStyle = skin.color;
   ctx.lineWidth = 2;
@@ -946,7 +969,7 @@ function drawMenu() {
     ctx.save();
     ctx.translate(sx, sy);
     ctx.rotate(-Math.PI / 2);
-    ctx.scale(0.55, 0.55);
+    ctx.scale(0.55 * s.scale, 0.55 * s.scale);
     ctx.strokeStyle = s.color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
