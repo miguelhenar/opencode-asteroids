@@ -1,38 +1,71 @@
-name: opencode
+name: copilot-bot
 on:
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
 
 jobs:
-  opencode:
+  copilot:
+    # Solo se activa si el comentario contiene el comando /oc y no fue escrito por otro bot
     if: |
       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
       github.event.comment.user.type != 'Bot'
     runs-on: ubuntu-latest
     permissions:
-      id-token: write      
-      contents: write      
-      pull-requests: write 
-      issues: write        
+      contents: write      # Permite proponer cambios o código en el repositorio
+      pull-requests: write # Permite interactuar con PRs
+      issues: write        # Permite leer y responder en el hilo de los Issues
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
-          persist-credentials: false
 
-      - name: Run OpenCode
-        uses: anomalyco/opencode/github@latest
+      - name: Run Copilot Code Agent
+        uses: github/copilot-github-actions/agent@main
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENCODE_VERSION: "1.18.32"
-          OPENCODE_DISABLE_PERMISSION_ASSERT: "true"
-          OPENCODE_MODEL: "github-copilot/gpt-4o"
-          OPENCODE_SMALL_MODEL: "github-copilot/gpt-4o"
+          # Pasamos tu clave extraída de auth.json (la que empieza por gho_ o ghu_)
+          GITHUB_TOKEN: ${{ secrets.OPENCODE_API_KEY }}
         with:
-          # Usamos el identificador exacto que te sugiere el servidor
+          # Forzamos el uso de tu modelo Copilot estable
           model: github-copilot/gpt-5.4-nano
-          use_github_token: false
+          prompt: ${{ github.event.comment.body }}
+
+
+# name: opencode
+# on:
+#   issue_comment:
+#     types: [created]
+#   pull_request_review_comment:
+#     types: [created]
+
+# jobs:
+#   opencode:
+#     if: |
+#       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
+#       github.event.comment.user.type != 'Bot'
+#     runs-on: ubuntu-latest
+#     permissions:
+#       id-token: write      
+#       contents: write      
+#       pull-requests: write 
+#       issues: write        
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v6
+#         with:
+#           fetch-depth: 1
+#           persist-credentials: false
+
+#       - name: Run OpenCode
+#         uses: anomalyco/opencode/github@latest
+#         env:
+#           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           OPENCODE_VERSION: "1.18.32"
+#           OPENCODE_DISABLE_PERMISSION_ASSERT: "true"
+#           OPENCODE_MODEL: "github-copilot/gpt-4o"
+#           OPENCODE_SMALL_MODEL: "github-copilot/gpt-4o"
+#         with:
+#           # Usamos el identificador exacto que te sugiere el servidor
+#           model: github-copilot/gpt-5.4-nano
+#           use_github_token: false
