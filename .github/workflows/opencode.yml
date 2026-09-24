@@ -2,8 +2,6 @@ name: opencode
 on:
   issue_comment:
     types: [created]
-  pull_request_review_comment:
-    types: [created]
 
 jobs:
   opencode:
@@ -27,9 +25,9 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SOLUCIÓN CLAVE: Pasamos tu clave personal en lugar del token del servidor
+          GITHUB_TOKEN: ${{ secrets.OPENCODE_API_KEY }} 
           OPENCODE_VERSION: "1.18.32"
-          OPENCODE_DISABLE_PERMISSION_ASSERT: "true"
         with:
           # Usamos el identificador exacto que te sugiere el servidor
           model: github-copilot/gpt-5.4-nano
