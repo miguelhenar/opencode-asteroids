@@ -30,6 +30,16 @@ const rand  = (min, max) => min + Math.random() * (max - min);
 const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
 // ── Skins de la nave ──────────────────────────────────────────────────────────
+const SHIP_RADIUS = 12;
+
+const PURPLE_SKIN = {
+  name: 'MORADA',
+  color: '#800080',
+  fillColor: 'rgba(128, 0, 128, 0.7)',
+  scale: 2,
+  scoreMultiplier: 2,
+};
+
 const SKINS = [
   {
     name: 'CLÁSICA',
@@ -229,7 +239,10 @@ class ShootingStar {
 
 // ── Ship ──────────────────────────────────────────────────────────────────────
 class Ship {
-  constructor() { this.reset(); }
+  constructor() {
+    this.purpleSkinActive = false;
+    this.reset();
+  }
 
   reset() {
     this.x      = W / 2;
@@ -237,7 +250,7 @@ class Ship {
     this.angle  = -Math.PI / 2;
     this.vx     = 0;
     this.vy     = 0;
-    this.radius = 12;
+    this.radius = SHIP_RADIUS * (this.purpleSkinActive ? PURPLE_SKIN.scale : 1);
     this.thrusting     = false;
     this.invincible    = 3;
     this.shootCooldown = 0;
@@ -312,10 +325,20 @@ class Ship {
     this.y = wrap(this.y + this.vy * dt, H);
   }
 
+  togglePurpleSkin() {
+    this.purpleSkinActive = !this.purpleSkinActive;
+    this.radius = SHIP_RADIUS * (this.purpleSkinActive ? PURPLE_SKIN.scale : 1);
+  }
+
+  get scoreMultiplier() {
+    return this.purpleSkinActive ? PURPLE_SKIN.scoreMultiplier : 1;
+  }
+
   tryShoot() {
     if (this.shootCooldown > 0 || this.dead) return [];
     this.shootCooldown = 0.2;
-    const NOSE = SKINS[currentSkin].noseOffset;
+    const skinScale = this.purpleSkinActive ? PURPLE_SKIN.scale : 1;
+    const NOSE = SKINS[currentSkin].noseOffset * skinScale;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
     if (this.tripleShot) {
@@ -334,10 +357,13 @@ class Ship {
     if (this.invincible > 0 && Math.floor(this.invincible * 8) % 2 === 0) return;
 
     const skin = SKINS[currentSkin];
+    const skinScale = this.purpleSkinActive ? PURPLE_SKIN.scale : 1;
+    const skinColor = this.purpleSkinActive ? PURPLE_SKIN.color : skin.color;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.strokeStyle = skin.color;
+    ctx.scale(skinScale, skinScale);
+    ctx.strokeStyle = skinColor;
     ctx.lineWidth   = 1.5;
     ctx.lineJoin    = 'round';
 
@@ -347,6 +373,10 @@ class Ship {
     for (let i = 1; i < skin.verts.length; i++)
       ctx.lineTo(skin.verts[i][0], skin.verts[i][1]);
     ctx.closePath();
+    if (this.purpleSkinActive) {
+      ctx.fillStyle = PURPLE_SKIN.fillColor;
+      ctx.fill();
+    }
     ctx.stroke();
 
     // Llama del propulsor
@@ -578,7 +608,7 @@ function explode(x, y, count = 8) {
 }
 
 function killShip() {
-  const skinColor = SKINS[currentSkin].color;
+  const skinColor = ship.purpleSkinActive ? PURPLE_SKIN.color : SKINS[currentSkin].color;
   for (let i = 0; i < 14; i++) particles.push(new Particle(ship.x, ship.y, skinColor, rand(1, 2)));
   ship.dead = true;
   lives--;
@@ -620,6 +650,8 @@ function update(dt) {
     return;
   }
 
+  if (pressed('KeyS')) ship.togglePurpleSkin();
+
   // Disparar
   if (pressed('Space')) {
     bullets.push(...ship.tryShoot());
@@ -655,7 +687,7 @@ function update(dt) {
       if (!a.dead && !b.dead && dist(b, a) < a.radius) {
         b.dead = true;
         a.dead = true;
-        score += POINTS[a.size];
+        score += POINTS[a.size] * ship.scoreMultiplier;
         explode(a.x, a.y, a.size * 5);
         newAsteroids.push(...a.split());
         if (Math.random() < 0.15) powerUps.push(new PowerUp(a.x, a.y));
@@ -671,7 +703,7 @@ function update(dt) {
       if (!s.dead && !b.dead && dist(b, s) < s.radius) {
         b.dead = true;
         s.dead = true;
-        score += 500;
+        score += 500 * ship.scoreMultiplier;
 
         // Explosión dorada: partículas rápidas y grandes
         for (let i = 0; i < 30; i++) {
@@ -806,6 +838,12 @@ function drawHUD() {
 
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
+
+  if (ship.purpleSkinActive) {
+    ctx.fillStyle = PURPLE_SKIN.color;
+    ctx.textAlign = 'right';
+    ctx.fillText(`${PURPLE_SKIN.name}  PUNTOS x2`, W - 14, 50);
+  }
 
   if (ship.speedTimer > 0) {
     ctx.fillStyle = '#00ffff';
@@ -964,6 +1002,11 @@ function drawMenu() {
     ctx.textAlign = 'center';
     ctx.fillText(s.name, sx, sy + 38);
   }
+
+  ctx.fillStyle = PURPLE_SKIN.color;
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('S EN JUEGO: NAVE MORADA x2 PUNTOS', W / 2, H - 78);
 
   // Texto "ESPACIO PARA JUGAR"
   ctx.textAlign = 'center';
