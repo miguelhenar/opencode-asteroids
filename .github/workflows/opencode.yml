@@ -30,9 +30,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENCODE_VERSION: "1.18.32"
           OPENCODE_DISABLE_PERMISSION_ASSERT: "true"
-          OPENCODE_MODEL: "opencode/deepseek-v4-flash-free"
-          OPENCODE_SMALL_MODEL: "opencode/deepseek-v4-flash-free"
+          OPENCODE_MODEL: "opencode-go/deepseek-v4-flash"
+          OPENCODE_SMALL_MODEL: "opencode-go/deepseek-v4-flash"
         with:
           # Usamos el identificador exacto que te sugiere el servidor
-          model: opencode/deepseek-v4-flash-free
+          model: opencode-go/deepseek-v4-flash
           use_github_token: false
