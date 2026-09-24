@@ -29,6 +29,7 @@ Luego visita `http://localhost:3000`.
 | `←` `→`   | Rotar nave |
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
+| `S` | Cambiar entre tamaño normal y doble (puntuación ×2) |
 
 ## Puntuación
 
