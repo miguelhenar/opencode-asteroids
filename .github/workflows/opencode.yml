@@ -31,4 +31,4 @@ jobs:
         with:
           # Usamos el identificador exacto que te sugiere el servidor
           model: github-copilot/gpt-5.4-nano
-          use_github_token: true
+          use_github_token: false
