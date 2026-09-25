@@ -162,8 +162,8 @@ jobs:
             --agent issue-triage \
             --model opencode/space-bunny-free \
             --format json \
-            --file "$RUNNER_TEMP/issue-triage-context.json" \
             "Analiza este issue, inspecciona el repositorio local y devuelve únicamente el JSON con labels, análisis y candidatos a duplicados." \
+            --file="$RUNNER_TEMP/issue-triage-context.json" \
             > "$TRIAGE_OUTPUT" < /dev/null
 
       - name: Apply triage
