@@ -650,7 +650,7 @@ function update(dt) {
     return;
   }
 
-  if (pressed('KeyS')) ship.togglePurpleSkin();
+  if (pressed('KeyD')) ship.togglePurpleSkin();
 
   // Disparar
   if (pressed('Space')) {
