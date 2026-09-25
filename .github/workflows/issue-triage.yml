@@ -32,7 +32,6 @@ jobs:
         with:
           script: |
             const fs = require("fs")
-            const { context } = require("@actions/github")
 
             const owner = context.repo.owner
             const repo = context.repo.repo
@@ -176,7 +175,6 @@ jobs:
         with:
           script: |
             const fs = require("fs")
-            const { context } = require("@actions/github")
 
             const owner = context.repo.owner
             const repo = context.repo.repo
