@@ -2,7 +2,7 @@
 
 ## What this is
 
-Vanilla JS Asteroids clone — single file (`game.js`, ~423 lines), HTML5 Canvas 800×600, no dependencies, no bundler.
+Vanilla JS Asteroids clone — single file (`game.js`, ~423 lines), HTML5 Canvas 1600×1200, no dependencies, no bundler.
 
 ## How to run
 
@@ -16,7 +16,7 @@ No build step. No tests. No lint. No CI. Verify changes by opening the game in a
 All game logic is in `game.js`. `index.html` is just a shell with inline CSS.
 
 Key sections in `game.js`:
-- **Lines 5–6**: Canvas dimensions (`W=800`, `H=600`) — referenced everywhere
+- **Lines 5–6**: Canvas dimensions (`W=1600`, `H=1200`) — referenced everywhere
 - **Lines 61–63**: Asteroid config arrays `RADII`, `SPEEDS`, `POINTS` (indexed by size 1–3)
 - **Lines 122–204**: `Ship` class — movement, shooting, invincibility, drawing
 - **Lines 65–119**: `Asteroid` class — irregular polygon vertices, `split()` into size-1
