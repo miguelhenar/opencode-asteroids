@@ -1,0 +1,412 @@
+name: Issue triage
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    if: github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Prepare issue context
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        env:
+          CONTEXT_FILE: ${{ runner.temp }}/issue-triage-context.json
+        with:
+          script: |
+            const fs = require("fs")
+            const { context } = require("@actions/github")
+
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const issueNumber = context.payload.issue.number
+            const outputPath = process.env.CONTEXT_FILE
+
+            if (!outputPath) {
+              throw new Error("CONTEXT_FILE is required")
+            }
+
+            const truncate = (value, limit) => {
+              if (value === null || value === undefined) return ""
+              const text = String(value)
+              return text.length > limit ? `${text.slice(0, limit)}\n[contenido truncado]` : text
+            }
+
+            const labelsFor = (labels) => (labels || []).map((label) => typeof label === "string" ? label : label.name).filter(Boolean)
+
+            const [issueResponse, comments, repositoryIssues] = await Promise.all([
+              github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }),
+              github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              }),
+              github.paginate(github.rest.issues.listForRepo, {
+                owner,
+                repo,
+                state: "all",
+                per_page: 100,
+                sort: "updated",
+                direction: "desc",
+              }),
+            ])
+
+            const issue = issueResponse.data
+            const marker = "<!-- opencode-issue-triage -->"
+            const payload = {
+              event: context.eventName,
+              action: context.payload.action,
+              repository: {
+                owner,
+                name: repo,
+                defaultBranch: context.payload.repository?.default_branch || "",
+              },
+              issue: {
+                number: issue.number,
+                title: truncate(issue.title, 500),
+                body: truncate(issue.body, 24000),
+                state: issue.state,
+                author: issue.user?.login || "",
+                authorAssociation: issue.author_association || "",
+                labels: labelsFor(issue.labels),
+                createdAt: issue.created_at,
+                updatedAt: issue.updated_at,
+                url: issue.html_url,
+              },
+              comments: (comments || [])
+                .filter((comment) => !String(comment.body || "").includes(marker))
+                .slice(-30)
+                .map((comment) => ({
+                  author: comment.user?.login || "",
+                  body: truncate(comment.body, 4000),
+                  createdAt: comment.created_at,
+                })),
+              existingIssues: (repositoryIssues || [])
+                .filter((item) => !item.pull_request && item.number !== issueNumber)
+                .slice(0, 100)
+                .map((item) => ({
+                  number: item.number,
+                  title: truncate(item.title, 500),
+                  body: truncate(item.body, 2500),
+                  state: item.state,
+                  author: item.user?.login || "",
+                  labels: labelsFor(item.labels),
+                  updatedAt: item.updated_at,
+                  url: item.html_url,
+                })),
+            }
+
+            fs.writeFileSync(outputPath, JSON.stringify(payload), "utf8")
+
+      - name: Install OpenCode
+        run: curl --proto '=https' --tlsv1.2 -fsSL https://opencode.ai/install | bash -s -- --version 1.18.32 --no-modify-path
+
+      - name: Analyze issue
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_CONFIG_CONTENT: '{"share":"disabled","autoupdate":false}'
+          OPENCODE_PERMISSION: |
+            {
+              "*": "deny",
+              "read": {
+                "*": "allow",
+                "*.env": "deny",
+                "*.env.*": "deny",
+                "*.key": "deny",
+                "*.pem": "deny"
+              },
+              "glob": "allow",
+              "grep": "allow",
+              "list": "allow",
+              "external_directory": "deny",
+              "edit": "deny",
+              "bash": "deny",
+              "webfetch": "deny",
+              "websearch": "deny",
+              "task": "deny",
+              "skill": "deny",
+              "question": "deny",
+              "todowrite": "deny"
+            }
+          OPENCODE_DISABLE_AUTOUPDATE: "true"
+          OPENCODE_DISABLE_DEFAULT_PLUGINS: "true"
+          OPENCODE_DISABLE_LSP_DOWNLOAD: "true"
+          OPENCODE_DISABLE_CLAUDE_CODE: "true"
+          OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: "true"
+          OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: "true"
+          TRIAGE_OUTPUT: ${{ runner.temp }}/issue-triage-output.ndjson
+        run: |
+          opencode run \
+            --dir "$GITHUB_WORKSPACE" \
+            --agent issue-triage \
+            --model opencode/space-bunny-free \
+            --format json \
+            --file "$RUNNER_TEMP/issue-triage-context.json" \
+            "Analiza este issue, inspecciona el repositorio local y devuelve únicamente el JSON con labels, análisis y candidatos a duplicados." \
+            > "$TRIAGE_OUTPUT" < /dev/null
+
+      - name: Apply triage
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
+        env:
+          CONTEXT_FILE: ${{ runner.temp }}/issue-triage-context.json
+          TRIAGE_OUTPUT: ${{ runner.temp }}/issue-triage-output.ndjson
+          LABEL_CATALOG: .github/issue-triage-labels.json
+        with:
+          script: |
+            const fs = require("fs")
+            const { context } = require("@actions/github")
+
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const issueNumber = context.payload.issue.number
+            const contextPath = process.env.CONTEXT_FILE
+            const outputPath = process.env.TRIAGE_OUTPUT
+            const catalogPath = process.env.LABEL_CATALOG
+            const marker = "<!-- opencode-issue-triage -->"
+
+            if (!contextPath || !outputPath || !catalogPath) {
+              throw new Error("Triage paths are required")
+            }
+
+            const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"))
+            const issueContext = JSON.parse(fs.readFileSync(contextPath, "utf8"))
+            const eventLines = fs.readFileSync(outputPath, "utf8").split(/\r?\n/)
+            const textParts = []
+
+            for (const line of eventLines) {
+              if (!line.trim()) continue
+              let event
+              try {
+                event = JSON.parse(line)
+              } catch {
+                continue
+              }
+              if (event.type === "text" && event.part && typeof event.part.text === "string") {
+                textParts.push(event.part.text)
+              }
+            }
+
+            if (!textParts.length) {
+              throw new Error("OpenCode did not return a text result")
+            }
+
+            const rawCandidates = [textParts[textParts.length - 1], textParts.join("")].filter(Boolean)
+            let result
+            for (const rawCandidate of rawCandidates) {
+              const start = rawCandidate.indexOf("{")
+              const end = rawCandidate.lastIndexOf("}")
+              if (start < 0 || end <= start) continue
+              try {
+                result = JSON.parse(rawCandidate.slice(start, end + 1))
+                break
+              } catch {
+                result = undefined
+              }
+            }
+
+            if (!result || typeof result !== "object" || Array.isArray(result)) {
+              throw new Error("OpenCode result is not valid JSON")
+            }
+
+            if (!Array.isArray(result.labels) || !Array.isArray(result.duplicate_candidates) || typeof result.analysis_markdown !== "string") {
+              throw new Error("OpenCode result does not match the triage schema")
+            }
+
+            const labels = [...new Set(result.labels)]
+            for (const label of labels) {
+              if (typeof label !== "string" || !Object.prototype.hasOwnProperty.call(catalog.labels, label)) {
+                throw new Error(`Label not present in the controlled catalog: ${label}`)
+              }
+            }
+
+            for (const category of ["type", "priority", "component"]) {
+              const selected = labels.filter((label) => catalog.categories[category].includes(label))
+              if (selected.length !== 1) {
+                throw new Error(`Expected exactly one ${category} label`)
+              }
+            }
+
+            const allowedNeeds = new Set(catalog.categories.needs)
+            for (const label of labels) {
+              const isCategory = ["type", "priority", "component"].some((category) => catalog.categories[category].includes(label))
+              if (!isCategory && !allowedNeeds.has(label)) {
+                throw new Error(`Unexpected triage label: ${label}`)
+              }
+            }
+
+            if (result.duplicate_candidates.length > 3) {
+              throw new Error("OpenCode returned too many duplicate candidates")
+            }
+
+            const knownIssues = new Set((issueContext.existingIssues || []).map((item) => item.number))
+            const duplicateCandidates = result.duplicate_candidates.map((candidate) => {
+              if (!candidate || typeof candidate !== "object" || !Number.isInteger(candidate.number) || candidate.number === issueNumber || !knownIssues.has(candidate.number)) {
+                throw new Error("OpenCode returned an invalid duplicate candidate")
+              }
+              if (!["low", "medium", "high"].includes(candidate.confidence) || typeof candidate.reason !== "string" || candidate.reason.trim().length === 0 || candidate.reason.length > 1000) {
+                throw new Error("OpenCode returned an invalid duplicate explanation")
+              }
+              const reason = candidate.reason
+                .replaceAll(marker, "")
+                .replace(/<!--[\s\S]*?-->/g, "")
+                .replace(/@/g, "&#64;")
+                .trim()
+              if (!reason) {
+                throw new Error("OpenCode returned an empty duplicate explanation")
+              }
+              return {
+                number: candidate.number,
+                confidence: candidate.confidence,
+                reason,
+              }
+            })
+
+            const duplicateLabel = "needs:duplicate-review"
+            const duplicateLabelIndex = labels.indexOf(duplicateLabel)
+            if (duplicateCandidates.length > 0 && duplicateLabelIndex === -1) {
+              labels.push(duplicateLabel)
+            }
+            if (duplicateCandidates.length === 0 && duplicateLabelIndex !== -1) {
+              labels.splice(duplicateLabelIndex, 1)
+            }
+
+            const analysis = result.analysis_markdown
+              .replaceAll(marker, "")
+              .replace(/<!--[\s\S]*?-->/g, "")
+              .replace(/@/g, "&#64;")
+              .trim()
+
+            if (!analysis) {
+              throw new Error("OpenCode returned an empty analysis")
+            }
+
+            const limitedAnalysis = analysis.length > 12000
+              ? `${analysis.slice(0, 11800)}\n\n[análisis truncado por límite de seguridad]`
+              : analysis
+
+            const ensureLabel = async (name) => {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name })
+                return
+              } catch (error) {
+                if (error.status !== 404) throw error
+              }
+
+              const definition = catalog.labels[name]
+              try {
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color: definition.color,
+                  description: definition.description,
+                })
+              } catch (error) {
+                if (error.status !== 422) throw error
+                await github.rest.issues.getLabel({ owner, repo, name })
+              }
+            }
+
+            for (const label of labels) {
+              await ensureLabel(label)
+            }
+
+            const issueLabels = await github.paginate(github.rest.issues.listLabelsOnIssue, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            })
+
+            for (const label of issueLabels) {
+              const managed = catalog.managedPrefixes.some((prefix) => label.name.startsWith(prefix))
+              if (managed && !labels.includes(label.name)) {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  name: label.name,
+                })
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels,
+            })
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: issueNumber,
+              per_page: 100,
+            })
+            const existingComment = comments
+              .filter((comment) => comment.user?.login === "github-actions[bot]" && String(comment.body || "").includes(marker))
+              .sort((left, right) => new Date(right.created_at) - new Date(left.created_at))[0]
+
+            const duplicateSection = duplicateCandidates.length
+              ? [
+                  "### Posibles duplicados",
+                  "",
+                  ...duplicateCandidates.map((candidate) => `- #${candidate.number} (${candidate.confidence}): ${candidate.reason.replace(/@/g, "&#64;")}`),
+                ].join("\n")
+              : ""
+
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`
+            const body = [
+              marker,
+              "",
+              "### Triage automático",
+              "",
+              `Labels aplicadas: ${labels.map((label) => `\`${label}\``).join(", ")}`,
+              "",
+              limitedAnalysis,
+              ...(duplicateSection ? ["", duplicateSection] : []),
+              "",
+              "---",
+              "",
+              `Ejecución: [${context.runId}](${runUrl})`,
+            ].join("\n")
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body,
+              })
+            }
+
+            console.log(`Applied triage to issue #${issueNumber}: ${labels.join(", ")}`)

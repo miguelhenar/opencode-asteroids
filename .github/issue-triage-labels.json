@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "categories": {
+    "type": [
+      "type:bug",
+      "type:feature",
+      "type:question",
+      "type:documentation",
+      "type:performance",
+      "type:security",
+      "type:other"
+    ],
+    "priority": [
+      "priority:critical",
+      "priority:high",
+      "priority:medium",
+      "priority:low"
+    ],
+    "component": [
+      "component:gameplay",
+      "component:controls",
+      "component:ship",
+      "component:asteroids",
+      "component:projectiles",
+      "component:collisions",
+      "component:rendering",
+      "component:scoring",
+      "component:ui",
+      "component:build",
+      "component:other"
+    ],
+    "needs": [
+      "needs:information",
+      "needs:reproduction",
+      "needs:duplicate-review"
+    ]
+  },
+  "managedPrefixes": [
+    "type:",
+    "priority:",
+    "component:",
+    "needs:"
+  ],
+  "labels": {
+    "type:bug": {
+      "color": "d73a4a",
+      "description": "Comportamiento inesperado o error reproducible"
+    },
+    "type:feature": {
+      "color": "a2eeef",
+      "description": "Solicitud de nueva funcionalidad"
+    },
+    "type:question": {
+      "color": "d876e3",
+      "description": "Duda sobre el uso del proyecto"
+    },
+    "type:documentation": {
+      "color": "0075ca",
+      "description": "Problema o mejora de documentación"
+    },
+    "type:performance": {
+      "color": "fbca04",
+      "description": "Problema de rendimiento"
+    },
+    "type:security": {
+      "color": "b60205",
+      "description": "Riesgo o vulnerabilidad de seguridad"
+    },
+    "type:other": {
+      "color": "c2e0c6",
+      "description": "Tema que no encaja en otra categoría"
+    },
+    "priority:critical": {
+      "color": "b60205",
+      "description": "Bloquea el uso o presenta un riesgo grave"
+    },
+    "priority:high": {
+      "color": "d93f0b",
+      "description": "Impacto importante que debe atenderse pronto"
+    },
+    "priority:medium": {
+      "color": "fbca04",
+      "description": "Impacto moderado con una ruta clara de solución"
+    },
+    "priority:low": {
+      "color": "0e8a16",
+      "description": "Impacto menor o mejora no urgente"
+    },
+    "component:gameplay": {
+      "color": "1d76db",
+      "description": "Lógica general y ciclo de juego"
+    },
+    "component:controls": {
+      "color": "c5def5",
+      "description": "Controles y entrada del usuario"
+    },
+    "component:ship": {
+      "color": "5319e7",
+      "description": "Nave, movimiento e invencibilidad"
+    },
+    "component:asteroids": {
+      "color": "5319e7",
+      "description": "Asteroides, división y generación"
+    },
+    "component:projectiles": {
+      "color": "5319e7",
+      "description": "Disparos y proyectiles"
+    },
+    "component:collisions": {
+      "color": "5319e7",
+      "description": "Colisiones y detección de impactos"
+    },
+    "component:rendering": {
+      "color": "5319e7",
+      "description": "Renderizado del canvas y efectos"
+    },
+    "component:scoring": {
+      "color": "5319e7",
+      "description": "Puntuación y progresión"
+    },
+    "component:ui": {
+      "color": "c5def5",
+      "description": "Interfaz, estados y textos"
+    },
+    "component:build": {
+      "color": "0e8a16",
+      "description": "Ejecución, dependencias o empaquetado"
+    },
+    "component:other": {
+      "color": "c2e0c6",
+      "description": "Componente no identificado"
+    },
+    "needs:information": {
+      "color": "fbca04",
+      "description": "Faltan datos para continuar el análisis"
+    },
+    "needs:reproduction": {
+      "color": "fbca04",
+      "description": "Falta una forma clara de reproducir el problema"
+    },
+    "needs:duplicate-review": {
+      "color": "d876e3",
+      "description": "Hay posibles issues duplicados que requieren revisión"
+    }
+  }
+}
